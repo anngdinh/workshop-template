@@ -1,5 +1,5 @@
 ---
-title: "My workshop template"
+title: "Annd2 workshop template"
 subtitle: Subtitle
 # format:
 #   revealjs:
