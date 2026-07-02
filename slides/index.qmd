@@ -13,6 +13,320 @@ subtitle: Subtitle
 - Item 2
 - Item 3
 
+# OpenSandbox {background-color="#1a1a2e"}
+
+Universal Sandbox Infrastructure for AI Applications
+
+::: {.notes}
+This section introduces OpenSandbox. Arrow **right** to move between the five movements
+(Framing → Architecture → Core flows → Hands-on → Wrap), and **down** to go deeper within one.
+:::
+
+## What is OpenSandbox? {background-color="#1a1a2e"}
+
+> Securely run commands, code interpreters, browsers, and developer tools in **isolated environments** with multi-language SDKs.
+
+::: {.fragment}
+A general-purpose **sandbox platform for AI applications**:
+:::
+
+::: {.incremental}
+- Multi-language **SDKs** + a `osb` **CLI** + an **MCP server**
+- A standardized **lifecycle & execution protocol** (OpenAPI)
+- **Docker** and **Kubernetes** runtime backends
+- In-sandbox execution: commands, files, code interpreters, browsers, desktops
+:::
+
+::: {.fragment}
+Listed in the [CNCF Landscape](https://landscape.cncf.io/?item=orchestration-management--scheduling-orchestration--opensandbox).
+:::
+
+## Why does it exist? {background-color="#1a1a2e"}
+
+AI applications increasingly need to run **untrusted, model-generated, or agentic code**.
+
+::: {.incremental}
+- 🤖 **Coding agents** execute shell commands and edit files
+- 🧪 **Code interpreters** run model-generated code
+- 🌐 **Browser automation** drives real Chrome / Playwright sessions
+- 🎯 **RL & evaluation** launch thousands of throwaway environments
+:::
+
+::: {.fragment}
+All of it needs **isolation**, **lifecycle management**, and a **uniform API** —
+regardless of whether it runs on a laptop or a Kubernetes cluster.
+:::
+
+## Typical scenarios {background-color="#1a1a2e"}
+
+:::: {.columns}
+::: {.column width="50%"}
+- **Coding agents** — Claude Code, Gemini CLI, Codex, Qwen Code
+- **Browser automation** — Chrome & Playwright with controlled net/fs
+- **Remote development** — VS Code Web, VNC, dev servers
+:::
+::: {.column width="50%"}
+- **AI code execution** — run generated code, stream outputs
+- **RL training** — high-throughput, pooled, managed lifecycle
+- **Enterprise isolation** — secure runtimes + egress + ingress control
+:::
+::::
+
+# Architecture {background-color="#16213e"}
+
+Six practical surfaces
+
+## The six surfaces {background-color="#16213e"}
+
+::: {.incremental}
+1. **Client** — SDKs, `osb` CLI, MCP server
+2. **Protocol** — OpenAPI contracts (`specs/`) — the source of truth
+3. **Control plane** — FastAPI lifecycle server
+4. **Runtime backends** — Docker & Kubernetes
+5. **Data plane** — user container + injected `execd` + sidecars
+6. **Network & security** — endpoints, ingress, egress, isolation
+:::
+
+::: {.fragment}
+> SDKs depend on **contracts**, the server owns **orchestration**, runtimes own **platform specifics**, and `execd`/egress own **in-sandbox operations**.
+:::
+
+## ① Client surface {background-color="#16213e"}
+
+**SDKs** wrap lifecycle + in-sandbox operations in language-native APIs:
+
+::: {.columns}
+::: {.column width="50%"}
+- Python
+- JavaScript / TypeScript
+- Java / Kotlin
+- C# / .NET
+- Go
+:::
+::: {.column width="50%"}
+**Tools built on top:**
+
+- `osb` **CLI** — sandbox, command, file, egress, devops, skills
+- **MCP server** — sandbox tools for Claude Code, Cursor, …
+- **Code Interpreter SDKs** — higher-level code-execution helpers
+:::
+:::
+
+## ② Protocol surface {background-color="#16213e"}
+
+`specs/` is the public contract — **protocol first**.
+
+| Spec | Purpose |
+|------|---------|
+| `sandbox-lifecycle.yml` | Create / list / pause / resume / renew / snapshot |
+| `diagnostic-api.yml` | Logs & events descriptors |
+| `execd-api.yaml` | In-sandbox execution (commands, files, code) |
+| `egress-api.yaml` | Runtime egress policy |
+
+::: {.fragment}
+SDKs and generated clients **align to the specs** rather than drifting from them.
+:::
+
+## ③ Lifecycle control plane {background-color="#16213e"}
+
+A **FastAPI** server (`server/`) that owns orchestration:
+
+::: {.incremental}
+- **Authenticates** requests (API key) & validates config
+- Selects **exactly one** runtime: `docker` **or** `kubernetes`
+- **Persists** server-managed records (SQLite by default)
+- **Resolves endpoints** — Docker-mapped, ingress gateway, or server proxy
+- Optional **auto-renew on access**
+:::
+
+::: {.fragment}
+API routes stay **thin** — behavior lives behind the `SandboxService` interface.
+:::
+
+## ④ Runtime backends {background-color="#16213e"}
+
+:::: {.columns}
+::: {.column width="50%"}
+**Docker** — local / single-host
+
+- Talks directly to the Docker daemon
+- Manages containers, ports, volumes, sidecars
+- Stages `execd` + bootstrap into the container
+- `pause`/`resume` at container level
+:::
+::: {.column width="50%"}
+**Kubernetes** — via workload providers
+
+- `batchsandbox` (default) — `BatchSandbox` CRD + `Pool`
+- `agent-sandbox` — `kubernetes-sigs/agent-sandbox`
+- Pooling & pre-warming for fast allocation
+- `pause`/`resume` via rootfs snapshots
+:::
+::::
+
+::: {.fragment}
+**Runtime-neutral API, runtime-specific execution** — same contract, different materialization.
+:::
+
+## ⑤ Sandbox data plane {background-color="#16213e"}
+
+Each sandbox = the **user's image + entrypoint**, with OpenSandbox processes injected around it:
+
+::: {.incremental}
+- **`execd`** — a Go daemon exposing the execution API (commands, files, PTY, code, metrics)
+- **Code Interpreter runtime** — Jupyter kernels; `execd` streams kernel messages as SSE
+- **Volumes** — `host` binds, `pvc` named storage, `ossfs` mounts
+- **Egress sidecar** — enforces outbound network policy
+:::
+
+## ⑥ Networking & security {background-color="#16213e"}
+
+::: {.incremental}
+- **Ingress** — K8s HTTP/WS reverse proxy (header / URI / wildcard-host routing)
+- **Secure access** — endpoint credentials & signed route tokens (K8s ingress mode)
+- **Egress** — FQDN/wildcard allow-deny, DNS & `dns+nft` enforcement, runtime `PATCH /policy`
+- **Secure defaults** — API-key auth, resource limits, capability drops, optional secure runtimes
+:::
+
+# Core flows {background-color="#0f3460"}
+
+How the pieces work together
+
+## Flow: creating a sandbox {background-color="#0f3460"}
+
+```{mermaid}
+flowchart LR
+  A[Client / SDK / CLI / MCP] --> B[POST /v1/sandboxes]
+  B --> C[FastAPI server<br/>validate request + config]
+  C --> D[Runtime service<br/>Docker or Kubernetes]
+  D --> E[Stage execd +<br/>egress / volume / network]
+  E --> F{Running<br/>or Failed}
+```
+
+::: {.fragment}
+Creation is **asynchronous** — poll `GET /v1/sandboxes/{id}` or use SDK readiness helpers.
+:::
+
+## Flow: command / file / code execution {background-color="#0f3460"}
+
+```text
+Client
+  → resolve execd endpoint (sandbox metadata or server proxy)
+  → call execd API with X-EXECD-ACCESS-TOKEN when required
+  → execd runs command / file op / session / PTY / Jupyter code
+  → streams SSE / WebSocket output or returns structured response
+```
+
+::: {.fragment}
+Command and code execution stream output over **Server-Sent Events**; long-lived shells use **PTY over WebSocket**.
+:::
+
+## Flow: egress, pause & snapshots {background-color="#0f3460"}
+
+:::: {.columns}
+::: {.column width="50%"}
+**Egress policy**
+
+- Create with `networkPolicy`
+- Runtime attaches egress **sidecar**
+- Outbound DNS/traffic filtered
+- `PATCH /policy` at runtime
+:::
+::: {.column width="50%"}
+**Pause / resume / snapshot**
+
+- Docker: container pause/resume
+- BatchSandbox: **rootfs snapshot** commit + recreate (preserves sandbox ID)
+- Public snapshot API → restorable image
+:::
+::::
+
+# Hands-on {background-color="#533483"}
+
+Run it yourself
+
+## 1 · Start the server {background-color="#533483"}
+
+**Prerequisites:** Docker 20.10+, Python 3.10+, `uv` (or pip)
+
+```bash
+# Generate a starter config
+uvx opensandbox-server init-config ~/.sandbox.toml --example docker
+
+# Start the server
+uvx opensandbox-server
+```
+
+```bash
+# Verify it's running
+curl http://127.0.0.1:8080/health
+# → {"status": "healthy"}
+```
+
+## 2 · Create & use a sandbox {background-color="#533483"}
+
+```python
+from opensandbox import Sandbox
+from opensandbox.models import WriteEntry
+from code_interpreter import CodeInterpreter, SupportedLanguage
+
+sandbox = await Sandbox.create(
+    "opensandbox/code-interpreter:v1.1.0",
+    entrypoint=["/opt/code-interpreter/code-interpreter.sh"],
+    env={"PYTHON_VERSION": "3.11"},
+)
+async with sandbox:
+    # Shell command
+    r = await sandbox.commands.run("echo 'Hello OpenSandbox!'")
+
+    # Files
+    await sandbox.files.write_files([WriteEntry(path="/tmp/hi.txt", data="Hi")])
+
+    # Code interpreter
+    ci = await CodeInterpreter.create(sandbox)
+    out = await ci.codes.run("2 + 2", language=SupportedLanguage.PYTHON)
+    print(out.result[0].text)  # 4
+```
+
+## 3 · The `osb` CLI {background-color="#533483"}
+
+```bash
+pip install opensandbox-cli
+
+osb config init
+osb config set connection.domain localhost:8080
+osb config set connection.protocol http
+
+osb sandbox create --image python:3.12 --timeout 30m -o json
+osb command run <sandbox-id> -o raw -- python -c "print(1 + 1)"
+```
+
+::: {.fragment}
+Same lifecycle, three faces: **SDK**, **CLI**, and **MCP** — pick what fits your workflow.
+:::
+
+# Wrap-up {background-color="#1a1a2e"}
+
+## Design principles {background-color="#1a1a2e"}
+
+::: {.incremental}
+- **Protocol first** — behavior starts from OpenAPI contracts
+- **Control plane vs data plane** — server orchestrates, `execd`/egress operate in-sandbox
+- **Runtime-neutral API, runtime-specific execution** — Docker & K8s, one contract
+- **Secure defaults with explicit escape hatches**
+- **Observable failures** — `state` / `reason` / `message`, metrics, request IDs
+:::
+
+## OpenSandbox — recap {background-color="#1a1a2e"}
+
+One platform to **provision, execute in, and tear down** isolated environments for AI workloads.
+
+**Learn more:**
+
+- Getting Started · Architecture · Examples — [the OpenSandbox docs](https://github.com/opensandbox-group/OpenSandbox/tree/main/docs)
+- [GitHub: opensandbox-group/OpenSandbox](https://github.com/opensandbox-group/OpenSandbox)
+- [CNCF Landscape entry](https://landscape.cncf.io/?item=orchestration-management--scheduling-orchestration--opensandbox)
+
 # Documentation
 
 See the [Quarto documentation](https://quarto.org/docs/presentations/revealjs/).
