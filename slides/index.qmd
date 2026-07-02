@@ -13,6 +13,213 @@ subtitle: Subtitle
 - Item 2
 - Item 3
 
+# Secure Container Runtimes {background-color="#f5f2ec"}
+
+**Which isolation technology — and what does it cost you?**
+
+Four backends, one cluster, identical workload. *Measured.*
+
+::: {.notes}
+Before we talk about the product, we need to answer the foundational question: how do
+you actually run untrusted, AI-generated code without it escaping onto your infrastructure?
+This section is the R&D — we evaluated four isolation runtimes head-to-head on the same
+cluster, same image, same SDK call. Everything you'll see is measured on our production VKS
+cluster, not vendor marketing numbers.
+:::
+
+## 1.1 · Containers are not a security boundary {background-color="#f5f2ec" .smaller}
+
+- A plain container **shares the host kernel**. One kernel LPE = full host compromise.
+- Untrusted / AI-generated code is **adversarial by assumption** — you can't trust it not to try.
+
+The isolation spectrum:
+
+```text
+  Weaker isolation ───────────────────────────────► Stronger isolation
+  Namespaces      gVisor (runsc)          microVM (Kata)
+  (runc)          userspace syscall        real guest kernel
+  shared kernel   interception             in a KVM VM
+                  ~80% syscall ABI         hardware-virt boundary
+```
+
+::: {.notes}
+The default Kubernetes runtime, runc, gives you namespaces and cgroups — process isolation,
+not security isolation. The kernel is shared. For our own internal apps that's fine. For code
+an LLM wrote and we're executing on demand, it isn't — we have to assume it's hostile. Two real
+technologies close that gap: gVisor, which puts a userspace kernel between the workload and the
+host and intercepts syscalls; and Kata Containers, which boots a genuine Linux kernel inside a
+hardware-virtualized microVM. We evaluated three Kata VMMs plus gVisor.
+:::
+
+## 1.2 · The four contenders {background-color="#f5f2ec" .smaller .scrollable}
+
+| Runtime | How it isolates | Boundary | Host requirement |
+|---|---|---|---|
+| **kata-fc** (Firecracker) | Real guest kernel in a minimal KVM microVM | Hardware virt | `/dev/kvm` + nested-virt + devmapper |
+| **kata-clh** (Cloud Hypervisor) | Real guest kernel in KVM microVM (Rust VMM) | Hardware virt | `/dev/kvm` + nested-virt |
+| **kata-qemu** | Real guest kernel in KVM microVM (full device model) | Hardware virt | `/dev/kvm` + nested-virt |
+| **gVisor** (runsc) | Userspace kernel intercepts syscalls | Syscall ABI | none — any Linux node |
+
+::: {.notes}
+Firecracker is AWS's minimal VMM — it's what powers Lambda and Fargate. Cloud Hypervisor is the
+Rust-based equivalent from Intel. QEMU is the full-fat, general-purpose emulator — most compatible,
+most overhead. All three run under Kata, the CNCF project that makes a VM look like a container to
+Kubernetes. gVisor is the odd one out: no VM at all, it's a Go process that emulates the Linux
+kernel in userspace. The critical operational line is the last column — three of these need nested
+virtualization and special hardware; gVisor runs on any commodity node. That single fact drives a
+lot of the cost story later.
+:::
+
+## 1.3 · How we measured {background-color="#f5f2ec" .smaller}
+
+- Same cluster (VKS `annd2-monitoring`), same pre-baked image, same Python SDK call site.
+- Only **RuntimeClass + target node pool** changed between runs.
+- All numbers **p50**, measured end-to-end through the real ingress + control plane.
+
+Three lenses:
+
+1. **Pool path** — claim a pre-warmed slot (the hot path)
+2. **No-pool path** — fresh sandbox, image cached
+3. **Raw pod cold-init** — `kubectl apply` → Ready, server/SDK stripped out
+
+::: {.notes}
+Credibility depends on method, so one slide on it. We held everything constant and flipped one knob
+at a time. We measured three different things because they answer different questions: the pool path
+is what a user actually feels in production; the no-pool path is the fallback when the pool is empty;
+and raw pod-init strips away our own software so we can see the pure runtime cost. When I quote a
+number, I'll tell you which lens it's from.
+:::
+
+## 1.4 · ★ Headline results {background-color="#f5f2ec" .smaller .scrollable}
+
+| Metric | kata-fc | kata-clh | kata-qemu | gVisor | Winner |
+|---|---|---|---|---|---|
+| Pool create (hot path) | **226 ms** | 391 ms | 452 ms | 245 ms | fc (gVisor +8%) |
+| Pool total (create+exec+kill) | **325 ms** | 489 ms | 558 ms | 356 ms | fc |
+| No-pool create (image cached) | 2.90 s | 2.92 s | 3.91 s | **2.03 s** | gVisor |
+| Pod-init floor p50 (idle node) | 2632 ms | 2666 ms | 3430 ms | **1855 ms** | gVisor |
+| Scheduler overhead / pod | 250m/130Mi | 250m/130Mi | 250m/160Mi | **0 / 0** | gVisor |
+| Nested-virt required | yes | yes | yes | **no** | gVisor |
+| Isolation boundary | KVM microVM | KVM microVM | KVM microVM | syscall filter | — |
+
+::: {.notes}
+This is the whole section on one slide. Two clear winners depending on the path. On the pool path —
+the hot path, where we've pre-warmed slots — Firecracker wins at 226 milliseconds; gVisor is within
+8%, and CLH and QEMU trail badly at +73% and +100%. On the no-pool path — cold sandbox — gVisor wins
+decisively at 2 seconds because there's no VM to boot; the Kata family pays roughly a full second for
+guest-kernel boot. And gVisor has zero scheduler overhead and needs no special hardware. QEMU loses on
+every single axis — it has no argument left on this cluster. The interesting story is fc-versus-gVisor,
+and it's genuinely a workload question, not a 'which is better' question.
+:::
+
+## 1.5 · Where do the seconds go? {background-color="#f5f2ec" .smaller}
+
+- Community claim: *"Firecracker boots in 200 ms."* True — but that's the **VMM process alone**.
+- Our measured pod-ready for kata-fc: **~2.1 s**. Where's the gap?
+
+| Phase (p50) | kata-fc | gVisor | What's happening |
+|---|---|---|---|
+| apply → Scheduled | 316 ms | 311 ms | k8s API + scheduler (runtime-independent) |
+| Scheduled → Running | 1932 ms | 1452 ms | CNI + shim + microVM boot + rootfs + start |
+| Running → Ready | ~0 | ~0 | readiness probe catches `execd` |
+
+gVisor (no-microVM baseline) → microVM stack overhead:
+**kata-clh +317 ms · kata-fc +480 ms · kata-qemu +1006 ms**
+
+::: {.notes}
+This slide preempts the smart question in the room. Everyone's heard Firecracker boots in 200
+milliseconds, so why do we measure two seconds? Because 'Kubernetes pod ready' includes a whole stack
+around the VMM: CNI networking, the containerd snapshotter, the kata shim, guest kernel boot, rootfs
+setup, container start. Here's the elegant part — gVisor runs that same Kubernetes machinery with no
+microVM, so the difference between gVisor and each Kata runtime is exactly the cost of the microVM
+stack. Firecracker adds 480 milliseconds. The famous 200 ms is real — it's about 40% of that 480 — but
+you can never reach it through Kubernetes. The other ~1.5 seconds is k8s plumbing that every runtime
+pays equally, and no runtime choice fixes it.
+:::
+
+## 1.6 · Runtime performance under load {background-color="#f5f2ec" .smaller .scrollable}
+
+Steady-state, reused sandbox (e2b-shim harness):
+
+| Workload | gVisor | kata-clh | kata-fc |
+|---|---|---|---|
+| echo steady-state p50 | 59 ms | 39 ms | **18 ms** |
+| `python -c pass` (cold interp) | 88 ms | 60 ms | **27 ms** |
+| numpy 500×500 matmul | 381 ms | 251 ms | **156 ms** |
+| `curl https://…` egress | 282 ms | 277 ms | **178 ms** |
+| large file write (4 MiB) | **300 ms** | 639 ms | 471 ms |
+
+::: {.notes}
+Startup latency isn't the whole story — what about once the sandbox is running? Here Firecracker's
+real kernel shows its value. Steady-state command latency, cold Python startup, CPU-bound numpy,
+network egress — Firecracker is 2–3× faster than gVisor, because gVisor intercepts every single syscall
+in userspace, and that tax compounds on syscall-heavy or compute-heavy work. The one place gVisor wins
+is large file writes, because it writes straight to the host filesystem instead of through a virtio
+layer. So for an interactive agent hammering tool calls in a loop, Firecracker's latency floor is the
+thing users feel.
+:::
+
+## 1.7 · The ops reality {background-color="#f5f2ec" .smaller}
+
+This is **not** plug-and-play:
+
+- **kata-fc** needs the containerd **devmapper** snapshotter — VKS ships overlayfs only. We install a thin-pool via a DaemonSet.
+- We took a node **NotReady** the first time (bad `/etc/containerd/config.toml` swap). Now every mutation is gated by `containerd config dump` dry-run before swap.
+- All three Kata runtimes need **nested-virt** — a special, more expensive node pool (`/dev/kvm`).
+- **gVisor:** installer DaemonSet, runs on commodity nodes, no kernel/containerd surgery.
+- kata-fc devmapper has an **8 GiB per-image cap** — bites large rootfs workloads.
+
+::: {.notes}
+The benchmarks make Firecracker look great, but I want to be honest about what it costs to operate.
+Firecracker on Kubernetes requires the devmapper snapshotter, which our managed Kubernetes doesn't
+ship — we install it with a DaemonSet that patches containerd on each node. We learned the hard way:
+our first attempt wrote a bad containerd config and took a node NotReady for an hour. The runbook now
+dry-runs every config change before applying it. All three VM runtimes also need nested-virtualization
+nodes, which are scarcer and pricier. gVisor, by contrast, is basically drop-in. This is the hidden tax
+that doesn't show up in a latency chart but absolutely shows up in your on-call rotation.
+:::
+
+## 1.8 · Capacity & cost {background-color="#f5f2ec" .smaller}
+
+- Kata reserves **130–160 MiB + 250m CPU per pod** for the VMM, on top of the workload's limits. gVisor reserves **nothing**.
+- A `limits.memory=1Gi` pod actually reserves **1154 MiB** on a Kata node vs **1024 MiB** on gVisor.
+- gVisor runs on commodity nodes (4 vCPU × 2); Kata needs nested-virt (8 vCPU).
+- Net: gVisor **packs more sandboxes per dollar** — zero overhead + cheaper hardware.
+- Our production pool (`realshell`, 15 kata-fc slots) is CPU-request bound on one nested-virt node (**86% of allocatable CPU**).
+
+::: {.notes}
+Capacity is where the runtime choice hits the budget. Every Kata pod carries a fixed 130-meg,
+quarter-CPU reservation for the hypervisor before the workload gets anything — and it runs on the
+expensive nested-virt hardware. gVisor has zero reservation and runs on commodity nodes. So for
+high-density, cost-sensitive fleets, gVisor is fundamentally cheaper per sandbox. This matters directly
+for unit economics when we productize — I'll come back to it in the cost section.
+:::
+
+## 1.9 · Verdict: a routing decision {background-color="#f5f2ec" .smaller .scrollable}
+
+Not "X wins" — a validated routing table:
+
+| If the workload is… | Use | Because |
+|---|---|---|
+| Interactive agent, rapid tool loops | **kata-fc** | Best dispatch + best steady-state latency, real kernel |
+| Fresh sandbox per request (no pool) | **gVisor** | −30% cold latency, no nested-virt, zero overhead |
+| High density / cost-sensitive fleet | **gVisor** | Zero scheduler overhead + commodity nodes |
+| Needs ptrace / io_uring / mount / kernel modules | **kata-fc / clh** | gVisor's ~80% syscall coverage fails these |
+| Highest-trust isolation | **kata-fc** | Hardware-virt boundary, minimal attack surface |
+| Fallback / GPU / PCI passthrough | **kata-clh** | Working alternative if FC support drops |
+| — anything — | kata-qemu | No axis where it wins; keep only for QEMU-specific device models |
+
+**Production default:** kata-fc for the pool hot-path; gVisor for no-pool / density.
+
+::: {.notes}
+So the takeaway isn't 'X wins.' It's that we now have a validated, measured routing table. Firecracker
+is our default for the hot interactive path because it's fastest where users feel it and gives the
+strongest isolation. gVisor is the right backend for cold, per-request, or high-density workloads. QEMU
+is off the table. And crucially — our platform can route per-workload: a multi-tenant deployment could
+send shell and code sandboxes to gVisor and full-Linux workloads to Firecracker, from the same control
+plane. That flexibility is a product feature, and it's the bridge into Section 2.
+:::
+
 # OpenSandbox {background-color="#f4f2fb"}
 
 ![](images/opensandbox/logo.svg){height="150px" fig-align="center"}
