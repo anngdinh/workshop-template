@@ -115,7 +115,7 @@ Walk top-to-bottom, then we take each surface in turn.
 > SDKs depend on **contracts**, the server owns **orchestration**, runtimes own **platform specifics**, and `execd`/egress own **in-sandbox operations**.
 :::
 
-## ① Client surface {background-color="#eef3fb"}
+## ① Client surface {background-color="#eef3fb" .smaller}
 
 **SDKs** in 5 languages wrap both lifecycle **and** in-sandbox operations behind language-native APIs:
 
@@ -142,7 +142,7 @@ Walk top-to-bottom, then we take each surface in turn.
 Generated OpenAPI clients + handwritten adapters (ergonomics, streaming, error mapping).
 :::
 
-## ① Client — CLI & MCP {background-color="#eef3fb"}
+## ① Client — CLI & MCP {background-color="#eef3fb" .smaller .scrollable}
 
 :::: {.columns}
 ::: {.column width="55%"}
@@ -168,7 +168,7 @@ Higher-level clients over `execd` code execution — manage contexts, run code p
 :::
 ::::
 
-## ② Protocol surface {background-color="#eef3fb"}
+## ② Protocol surface {background-color="#eef3fb" .smaller}
 
 `specs/` is the public contract — **protocol first**.
 
@@ -183,7 +183,7 @@ Higher-level clients over `execd` code execution — manage contexts, run code p
 SDKs and generated clients **align to the specs** rather than drifting from them.
 :::
 
-## ② Lifecycle request — key fields {background-color="#eef3fb"}
+## ② Lifecycle request — key fields {background-color="#eef3fb" .smaller}
 
 `POST /v1/sandboxes` speaks one runtime-neutral shape:
 
@@ -221,7 +221,7 @@ A **FastAPI** server (`server/`) that owns orchestration:
 API routes stay **thin** — behavior lives behind the `SandboxService` interface.
 :::
 
-## ③ Control plane — specifics {background-color="#eef3fb"}
+## ③ Control plane — specifics {background-color="#eef3fb" .smaller .scrollable}
 
 :::: {.columns}
 ::: {.column width="50%"}
@@ -247,7 +247,7 @@ API routes stay **thin** — behavior lives behind the `SandboxService` interfac
 Endpoints resolve to a Docker-mapped host port, a K8s ingress gateway, or a **server proxy** (`/sandboxes/{id}/proxy/{port}`, HTTP + WebSocket).
 :::
 
-## ④ Runtime backends {background-color="#eef3fb"}
+## ④ Runtime backends {background-color="#eef3fb" .smaller}
 
 :::: {.columns}
 ::: {.column width="50%"}
@@ -272,7 +272,7 @@ Endpoints resolve to a Docker-mapped host port, a K8s ingress gateway, or a **se
 **Runtime-neutral API, runtime-specific execution** — same contract, different materialization.
 :::
 
-## ④ Kubernetes — BatchSandbox {background-color="#eef3fb"}
+## ④ Kubernetes — BatchSandbox {background-color="#eef3fb" .smaller}
 
 :::: {.columns}
 ::: {.column width="52%"}
@@ -302,7 +302,7 @@ Each sandbox = the **user's image + entrypoint**, with OpenSandbox processes inj
 - **Egress sidecar** — enforces outbound network policy
 :::
 
-## ⑤ execd — the in-sandbox daemon {background-color="#eef3fb"}
+## ⑤ execd — the in-sandbox daemon {background-color="#eef3fb" .smaller .scrollable}
 
 A **Go / Gin** daemon injected into every sandbox (default port `44772`).
 
@@ -327,7 +327,7 @@ Optional `X-EXECD-ACCESS-TOKEN` auth.
 :::
 ::::
 
-## ⑤ Code Interpreter runtime {background-color="#eef3fb"}
+## ⑤ Code Interpreter runtime {background-color="#eef3fb" .smaller}
 
 The official `code-interpreter` image runs **Jupyter** inside the sandbox; `execd` translates kernel messages into OpenSandbox streaming events.
 
@@ -350,7 +350,7 @@ Lower-level command / file / code APIs stay available through the sandbox SDKs d
 - **Secure defaults** — API-key auth, resource limits, capability drops, optional secure runtimes
 :::
 
-## ⑥ Ingress routing modes {background-color="#eef3fb"}
+## ⑥ Ingress routing modes {background-color="#eef3fb" .smaller}
 
 A K8s HTTP/WebSocket reverse proxy that watches sandbox CRs and routes to sandbox ports:
 
@@ -376,7 +376,7 @@ OpenSandbox-Ingress-To: <id>-<port>
 Endpoints come from the `sandbox.opensandbox.io/endpoints` annotation (BatchSandbox) or `status.serviceFQDN` (agent-sandbox).
 :::
 
-## ⑥ Egress sidecar {background-color="#eef3fb"}
+## ⑥ Egress sidecar {background-color="#eef3fb" .smaller .scrollable}
 
 Shares the sandbox **network namespace**; only the sidecar holds `CAP_NET_ADMIN`.
 
