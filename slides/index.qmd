@@ -750,6 +750,176 @@ One platform to **provision, execute in, and tear down** isolated environments f
 - [GitHub: opensandbox-group/OpenSandbox](https://github.com/opensandbox-group/OpenSandbox)
 - [CNCF Landscape entry](https://landscape.cncf.io/?item=orchestration-management--scheduling-orchestration--opensandbox)
 
+# Agent Sandbox {background-color="#e6f2f0"}
+
+![](images/agent-sandbox/logo.svg){height="130px" fig-align="center"}
+
+A Kubernetes-native **`Sandbox`** CRD & controller · `kubernetes-sigs/agent-sandbox`
+
+::: {.notes}
+Where OpenSandbox is a full platform, Agent Sandbox is the upstream Kubernetes-native
+primitive: a Sandbox CRD under SIG Apps. It's also one of the workload providers
+OpenSandbox can target — so this is the standards layer beneath what we just saw.
+:::
+
+## What is Agent Sandbox? {background-color="#e6f2f0" .smaller}
+
+> Easy management of **isolated, stateful, singleton workloads** — ideal for AI agent runtimes.
+
+::: {.incremental}
+- A **`Sandbox` CRD + controller** for Kubernetes (under **SIG Apps**)
+- A declarative API for a **single stateful pod** with stable identity + persistent storage
+- The feel of a **lightweight single-container VM**, built on native k8s primitives
+- Fills the gap between **Deployments** (stateless/replicated) and **StatefulSets** (numbered)
+:::
+
+::: {.fragment}
+API group: `agents.x-k8s.io` (`v1alpha1` → `v1beta1`).
+:::
+
+## The Sandbox CRD {background-color="#e6f2f0" .smaller .scrollable}
+
+:::: {.columns}
+::: {.column width="46%"}
+**Key features**
+
+- **Stable identity** — stable hostname & network identity
+- **Persistent storage** — survives restarts (PVC templates)
+- **Lifecycle** — create · scheduled delete · **pause / resume**
+:::
+::: {.column width="54%"}
+```yaml
+apiVersion: agents.x-k8s.io/v1beta1
+kind: Sandbox
+metadata:
+  name: hello-world
+spec:
+  podTemplate:
+    spec:
+      containers:
+      - name: my-container
+        image: my-registry/hello-world:latest
+      restartPolicy: Never
+```
+:::
+::::
+
+::: {.fragment}
+`lifecycle.shutdownTime` + `shutdownPolicy` (`Retain` | `Delete`) handle expiry.
+:::
+
+## Extensions: pools & templates {background-color="#e6f2f0" .smaller}
+
+Built on top of the core `Sandbox` API:
+
+::: {.incremental}
+- **`SandboxTemplate`** — reusable definitions for creating many similar Sandboxes
+- **`SandboxWarmPool`** — a pool of **pre-warmed** Sandboxes for fast allocation
+- **`SandboxClaim`** — grab a ready Sandbox from a warm pool, hiding the config details
+:::
+
+::: {.fragment}
+The warm-pool + claim pattern is what drives **sub-second** sandbox assignment.
+:::
+
+## Architecture {background-color="#e6f2f0" .smaller}
+
+```{mermaid}
+flowchart LR
+  User[User]
+  User -->|creates| Sandbox
+  User -->|creates| Claim[SandboxClaim]
+  Template[SandboxTemplate]
+  WarmPool[SandboxWarmPool] -->|references| Template
+  WarmPool -->|pre-warms| Sandbox
+  Claim -->|adopts from| WarmPool
+  Sandbox -->|creates| Pod
+  Pod --> Runtime[Sandbox Runtime]
+```
+
+::: {.notes}
+Standard Kubernetes controller pattern: you declare a Sandbox (or a Claim), and the
+controller reconciles the backing Pod and runtime. The WarmPool pre-creates Sandboxes
+from a Template so a Claim can adopt one instantly instead of waiting for cold creation.
+:::
+
+## API & SDKs {background-color="#e6f2f0" .smaller}
+
+:::: {.columns}
+::: {.column width="50%"}
+**API groups**
+
+- `agents.x-k8s.io` — core `Sandbox`
+- `extensions.agents.x-k8s.io` — Template / Claim / WarmPool
+- Evolving **alpha → beta**
+:::
+::: {.column width="50%"}
+**Clients**
+
+- **Go SDK** — `sigs.k8s.io/agent-sandbox/clients/go/sandbox`
+- **Python SDK** — high-level create/manage
+- **TypeScript SDK** — *in progress*
+- **MCP server** — *planned*
+:::
+::::
+
+## Install & run {background-color="#e6f2f0" .smaller .scrollable}
+
+```bash
+export VERSION="v0.1.0"   # a release tag
+
+# Core controller + CRDs
+kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${VERSION}/manifest.yaml
+
+# Extensions (SandboxTemplate / SandboxClaim / SandboxWarmPool)
+kubectl apply -f https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${VERSION}/extensions.yaml
+```
+
+```bash
+kubectl apply -f hello-world.yaml
+kubectl get sandbox hello-world     # controller provisions the Pod
+```
+
+## Scale & performance {background-color="#e6f2f0" .smaller}
+
+::: {.incremental}
+- Tunable controller concurrency — `--sandbox-claim-concurrent-workers` (def. 50), warm-pool batch size (def. 300)
+- Target: **1000+ claims/sec**; claim latency **200 ms → 100 ms → 50 ms**
+- **Scale-to-zero** — suspend inactive sandboxes, keep a fast resume path
+- **TFFI** (Time-To-First-Instruction) as a first-class benchmark
+:::
+
+::: {.fragment}
+Warm pools + suspend/resume are the levers for price-performance at fleet scale.
+:::
+
+## Roadmap highlights {background-color="#e6f2f0" .smaller .scrollable}
+
+| Theme | Notable items |
+|---|---|
+| Core | Portable backend (decouple API from runtime), Template/WarmPool rolling updates, 1st-class router, auto suspend/resume |
+| SDKs | Expand Python, TypeScript SDK, **MCP server** |
+| Price-perf | Scale-to-zero, TFFI benchmarks, 1000+ claims/sec |
+| Networking | NetworkPolicy attach at claim time, per-claim identity & storage |
+| Ecosystem | Ray (RLlib), LangChain / CrewAI / kAgent, curated browser & shell images |
+
+## Where it fits {background-color="#e6f2f0" .smaller}
+
+::: {.incremental}
+- **Upstream, vendor-neutral** Kubernetes primitive for agent workloads (SIG Apps)
+- OpenSandbox can target it as its **`agent-sandbox` workload provider** — reading `status.serviceFQDN` for routing
+- Think: **the CRD standard** underneath higher-level platforms like OpenSandbox
+:::
+
+::: {.fragment}
+Same goal as this whole talk — **run untrusted agent code safely** — expressed as a native k8s API.
+:::
+
+## Agent Sandbox — links {background-color="#e6f2f0" .smaller}
+
+- [agent-sandbox.sigs.k8s.io](https://agent-sandbox.sigs.k8s.io) · [Docs](https://agent-sandbox.sigs.k8s.io/docs/) · [Getting Started](https://agent-sandbox.sigs.k8s.io/docs/getting_started/)
+- [GitHub: kubernetes-sigs/agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox) · [Roadmap](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/roadmap.md)
+
 # Documentation
 
 See the [Quarto documentation](https://quarto.org/docs/presentations/revealjs/).
