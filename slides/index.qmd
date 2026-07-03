@@ -1,5 +1,5 @@
 ---
-title: "Running Untrusted AI Code Safely"
+title: "The Last Samurai"
 subtitle: "Sandbox infrastructure — the landscape, secure container runtimes, OpenSandbox & Agent Sandbox"
 # format:
 #   revealjs:
