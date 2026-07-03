@@ -902,20 +902,6 @@ Same goal as this whole talk — **run untrusted agent code safely** — express
 - [agent-sandbox.sigs.k8s.io](https://agent-sandbox.sigs.k8s.io) · [Docs](https://agent-sandbox.sigs.k8s.io/docs/) · [Getting Started](https://agent-sandbox.sigs.k8s.io/docs/getting_started/)
 - [GitHub: kubernetes-sigs/agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox) · [Roadmap](https://github.com/kubernetes-sigs/agent-sandbox/blob/main/roadmap.md)
 
-# Documentation
+# Any questions? {background-color="#f4f2fb"}
 
-See the [Quarto documentation](https://quarto.org/docs/presentations/revealjs/).
-
-# PDF
-
-Want to grab a PDF version?
-
-Try the [PDF Export mode](https://quarto.org/docs/presentations/revealjs/presenting.html#print-to-pdf) from Chrome/Chromium.
-
-Alternatively (and sometimes for better result), use [decktape](https://github.com/astefanutti/decktape):
-
-```shell
-decktape --size='2048x1536' 'http://localhost:7996' slides.pdf
-```
-
-# The End
+Thank you! 🙏
