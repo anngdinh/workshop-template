@@ -34,13 +34,7 @@ cluster, not vendor marketing numbers.
 
 The isolation spectrum:
 
-```text
-  Weaker isolation ───────────────────────────────► Stronger isolation
-  Namespaces      gVisor (runsc)          microVM (Kata)
-  (runc)          userspace syscall        real guest kernel
-  shared kernel   interception             in a KVM VM
-                  ~80% syscall ABI         hardware-virt boundary
-```
+![](images/runtimes/isolation-spectrum.png){width="82%" fig-align="center" style="border-radius:8px;border:1px solid #ddd;"}
 
 ::: {.notes}
 The default Kubernetes runtime, runc, gives you namespaces and cgroups — process isolation,
