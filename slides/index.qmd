@@ -139,7 +139,24 @@ virtualization and special hardware; gVisor runs on any commodity node. That sin
 lot of the cost story later.
 :::
 
-## 1.3 · Firecracker — `kata-fc` {background-color="#f5f2ec" .smaller}
+## 1.3 · Kata Containers — the microVM framework {background-color="#f5f2ec" .smaller}
+
+![](images/runtimes/kata.svg){.absolute top="20" right="30" height="60"}
+
+**CNCF project** — "the speed of containers, the security of VMs".
+
+::: {.incremental}
+- Makes a **microVM look like a container** to Kubernetes (OCI / CRI, containerd & CRI-O shims)
+- Each pod runs in a lightweight VM with its **own guest kernel** — hardware-virt boundary
+- **Pluggable VMM (hypervisor)** → this is where FC / CLH / QEMU plug in
+- Selected per pod via a **`RuntimeClass`**: `kata-fc`, `kata-clh`, `kata-qemu`
+:::
+
+::: {.fragment}
+So the next three contenders are all **Kata + a different VMM**.
+:::
+
+## 1.4 · Firecracker — `kata-fc` {background-color="#f5f2ec" .smaller}
 
 ![](images/runtimes/firecracker.svg){.absolute top="20" right="30" height="64"}
 
@@ -156,7 +173,7 @@ lot of the cost story later.
 **Our take:** fastest hot-path + best steady-state, strongest isolation — but the heaviest to operate.
 :::
 
-## 1.4 · Cloud Hypervisor — `kata-clh` {background-color="#f5f2ec" .smaller}
+## 1.5 · Cloud Hypervisor — `kata-clh` {background-color="#f5f2ec" .smaller}
 
 ![](images/runtimes/cloud-hypervisor.png){.absolute top="20" right="30" height="64" style="border-radius:8px;"}
 
@@ -173,7 +190,7 @@ lot of the cost story later.
 **Our take:** a solid Firecracker alternative / fallback — but mid-pack on latency in our tests.
 :::
 
-## 1.5 · QEMU — `kata-qemu` {background-color="#f5f2ec" .smaller}
+## 1.6 · QEMU — `kata-qemu` {background-color="#f5f2ec" .smaller}
 
 ![](images/runtimes/qemu.svg){.absolute top="20" right="30" height="64"}
 
@@ -190,7 +207,7 @@ lot of the cost story later.
 **Our take:** maximum compatibility, but the **most overhead** — slowest on every axis we measured.
 :::
 
-## 1.6 · gVisor — `runsc` {background-color="#f5f2ec" .smaller}
+## 1.7 · gVisor — `runsc` {background-color="#f5f2ec" .smaller}
 
 ![](images/runtimes/gvisor.png){.absolute top="20" right="30" height="64"}
 
@@ -207,7 +224,7 @@ lot of the cost story later.
 **Our take:** best cold-start, density, and ops simplicity — pays a syscall tax on hot, compute-heavy work.
 :::
 
-## 1.7 · How we measured {background-color="#f5f2ec" .smaller}
+## 1.8 · How we measured {background-color="#f5f2ec" .smaller}
 
 - Same cluster (VKS `annd2-monitoring`), same pre-baked image, same Python SDK call site.
 - Only **RuntimeClass + target node pool** changed between runs.
@@ -227,7 +244,7 @@ and raw pod-init strips away our own software so we can see the pure runtime cos
 number, I'll tell you which lens it's from.
 :::
 
-## 1.8 · ★ Headline results {background-color="#f5f2ec" .smaller .scrollable}
+## 1.9 · ★ Headline results {background-color="#f5f2ec" .smaller .scrollable}
 
 | Metric | kata-fc | kata-clh | kata-qemu | gVisor | Winner |
 |---|---|---|---|---|---|
@@ -249,7 +266,7 @@ every single axis — it has no argument left on this cluster. The interesting s
 and it's genuinely a workload question, not a 'which is better' question.
 :::
 
-## 1.9 · Where do the seconds go? {background-color="#f5f2ec" .smaller}
+## 1.10 · Where do the seconds go? {background-color="#f5f2ec" .smaller}
 
 - Community claim: *"Firecracker boots in 200 ms."* True — but that's the **VMM process alone**.
 - Our measured pod-ready for kata-fc: **~2.1 s**. Where's the gap?
@@ -274,7 +291,7 @@ you can never reach it through Kubernetes. The other ~1.5 seconds is k8s plumbin
 pays equally, and no runtime choice fixes it.
 :::
 
-## 1.10 · Runtime performance under load {background-color="#f5f2ec" .smaller .scrollable}
+## 1.11 · Runtime performance under load {background-color="#f5f2ec" .smaller .scrollable}
 
 Steady-state, reused sandbox (e2b-shim harness):
 
@@ -296,7 +313,7 @@ layer. So for an interactive agent hammering tool calls in a loop, Firecracker's
 thing users feel.
 :::
 
-## 1.11 · The ops reality {background-color="#f5f2ec" .smaller}
+## 1.12 · The ops reality {background-color="#f5f2ec" .smaller}
 
 This is **not** plug-and-play:
 
@@ -316,7 +333,7 @@ nodes, which are scarcer and pricier. gVisor, by contrast, is basically drop-in.
 that doesn't show up in a latency chart but absolutely shows up in your on-call rotation.
 :::
 
-## 1.12 · Capacity & cost {background-color="#f5f2ec" .smaller}
+## 1.13 · Capacity & cost {background-color="#f5f2ec" .smaller}
 
 - Kata reserves **130–160 MiB + 250m CPU per pod** for the VMM, on top of the workload's limits. gVisor reserves **nothing**.
 - A `limits.memory=1Gi` pod actually reserves **1154 MiB** on a Kata node vs **1024 MiB** on gVisor.
@@ -332,7 +349,7 @@ high-density, cost-sensitive fleets, gVisor is fundamentally cheaper per sandbox
 for unit economics when we productize — I'll come back to it in the cost section.
 :::
 
-## 1.13 · Verdict {background-color="#f5f2ec" .smaller}
+## 1.14 · Verdict {background-color="#f5f2ec" .smaller}
 
 Not "X wins" — **route per workload**:
 
@@ -354,7 +371,7 @@ route per-workload from the same control plane. That flexibility is a product fe
 into Section 2.
 :::
 
-## 1.14 · Full routing table {background-color="#f5f2ec" .smaller .scrollable}
+## 1.15 · Full routing table {background-color="#f5f2ec" .smaller .scrollable}
 
 | Workload | Use | Why |
 |---|---|---|
@@ -366,7 +383,7 @@ into Section 2.
 | GPU / PCI passthrough / fallback | **kata-clh** | Works if FC support drops |
 | — anything — | kata-qemu | No axis where it wins |
 
-## 1.15 · Compatibility matrix {background-color="#f5f2ec" .smaller .scrollable}
+## 1.16 · Compatibility matrix {background-color="#f5f2ec" .smaller .scrollable}
 
 | Feature | runc | gVisor | Kata (QEMU) | Kata (CLH) | Kata (FC) |
 |---|---|---|---|---|---|
