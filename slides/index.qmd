@@ -693,6 +693,17 @@ Shares the sandbox **network namespace**; only the sidecar holds `CAP_NET_ADMIN`
 :::
 ::::
 
+::: {.fragment}
+**Why not native k8s NetworkPolicy?**
+
+- **Labels unpredictable** — Pod labels are platform-injected, not user-controllable → can't select per-tenant
+- **Static vs. churn** — sandboxes are created/destroyed constantly; NetworkPolicy is a static declaration
+- **Wrong granularity** — Pod-set selectors, but each sandbox needs its own "deny all others" domain
+- **No FQDN / L7** — L3/L4 & IP-based; can't allowlist domains — the control point must live *in* the sandbox
+
+[Network Isolation — why NetworkPolicy is insufficient](https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/network-isolation.md)
+:::
+
 ## ⑥ Network isolation {background-color="#ffffff"}
 
 ![](images/opensandbox/single-host-network.png){.r-stretch fig-align="center"}
