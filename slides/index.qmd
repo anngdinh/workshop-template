@@ -613,16 +613,9 @@ the main container runs unprivileged, and outbound traffic is filtered before it
 
 How the pieces work together
 
-## Flow: creating a sandbox {background-color="#eef6f2"}
+## Flow: creating a sandbox {background-color="#ffffff"}
 
-```{mermaid}
-flowchart LR
-  A[Client / SDK / CLI / MCP] --> B[POST /v1/sandboxes]
-  B --> C[FastAPI server<br/>validate request + config]
-  C --> D[Runtime service<br/>Docker or Kubernetes]
-  D --> E[Stage execd +<br/>egress / volume / network]
-  E --> F{Running<br/>or Failed}
-```
+![](images/opensandbox/creation-flow.svg){.r-stretch fig-align="center"}
 
 ::: {.fragment}
 Creation is **asynchronous** — poll `GET /v1/sandboxes/{id}` or use SDK readiness helpers.
@@ -822,20 +815,9 @@ Built on top of the core `Sandbox` API:
 The warm-pool + claim pattern is what drives **sub-second** sandbox assignment.
 :::
 
-## Architecture {background-color="#e6f2f0" .smaller}
+## Architecture {background-color="#ffffff"}
 
-```{mermaid}
-flowchart LR
-  User[User]
-  User -->|creates| Sandbox
-  User -->|creates| Claim[SandboxClaim]
-  Template[SandboxTemplate]
-  WarmPool[SandboxWarmPool] -->|references| Template
-  WarmPool -->|pre-warms| Sandbox
-  Claim -->|adopts from| WarmPool
-  Sandbox -->|creates| Pod
-  Pod --> Runtime[Sandbox Runtime]
-```
+![](images/agent-sandbox/architecture.svg){.r-stretch fig-align="center"}
 
 ::: {.notes}
 Standard Kubernetes controller pattern: you declare a Sandbox (or a Claim), and the

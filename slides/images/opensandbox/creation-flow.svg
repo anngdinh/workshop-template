@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="700" viewBox="0 0 640 700" role="img" aria-labelledby="title">
+  <title id="title">OpenSandbox creation flow</title>
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .b   { fill:#ffffff; stroke-width:2.5; rx:12; }
+      .t   { font-family:'Helvetica Neue',Arial,sans-serif; font-size:21px; fill:#0f172a; font-weight:600; text-anchor:middle; }
+      .s   { font-family:'Helvetica Neue',Arial,sans-serif; font-size:15px; fill:#475569; text-anchor:middle; }
+      .e   { stroke:#64748b; stroke-width:2.5; fill:none; }
+    </style>
+  </defs>
+
+  <!-- arrows -->
+  <path class="e" d="M320,92 L320,116"  marker-end="url(#ah2)"/>
+  <path class="e" d="M320,196 L320,220" marker-end="url(#ah2)"/>
+  <path class="e" d="M320,300 L320,324" marker-end="url(#ah2)"/>
+  <path class="e" d="M320,404 L320,428" marker-end="url(#ah2)"/>
+  <path class="e" d="M320,508 L320,532" marker-end="url(#ah2)"/>
+
+  <!-- 1 -->
+  <rect class="b" x="120" y="28" width="400" height="64" stroke="#7c3aed"/>
+  <text class="t" x="320" y="66">Client · SDK · CLI · MCP</text>
+
+  <!-- 2 -->
+  <rect class="b" x="120" y="132" width="400" height="64" stroke="#2563eb"/>
+  <text class="t" x="320" y="170">POST /v1/sandboxes</text>
+
+  <!-- 3 -->
+  <rect class="b" x="120" y="236" width="400" height="64" stroke="#2563eb"/>
+  <text class="t" x="320" y="266">FastAPI lifecycle server</text>
+  <text class="s" x="320" y="288">validate request + config</text>
+
+  <!-- 4 -->
+  <rect class="b" x="120" y="340" width="400" height="64" stroke="#0d9488"/>
+  <text class="t" x="320" y="370">Runtime service</text>
+  <text class="s" x="320" y="392">Docker or Kubernetes</text>
+
+  <!-- 5 -->
+  <rect class="b" x="120" y="444" width="400" height="64" stroke="#0d9488"/>
+  <text class="t" x="320" y="474">Stage execd</text>
+  <text class="s" x="320" y="496">+ egress / volume / network</text>
+
+  <!-- 6 -->
+  <rect class="b" x="120" y="548" width="400" height="64" stroke="#059669"/>
+  <text class="t" x="320" y="586">Running  —or—  Failed</text>
+</svg>

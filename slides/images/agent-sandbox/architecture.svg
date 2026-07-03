@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="480" viewBox="0 0 1120 480" role="img" aria-labelledby="title">
+  <title id="title">Agent Sandbox architecture</title>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .box { fill:#ffffff; stroke-width:2.5; rx:10; }
+      .lbl { font-family:'Helvetica Neue',Arial,sans-serif; font-size:20px; fill:#0f172a; font-weight:600; text-anchor:middle; }
+      .sub { font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px; fill:#475569; text-anchor:middle; }
+      .edge { stroke:#64748b; stroke-width:2; fill:none; }
+      .etxt { font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px; fill:#64748b; font-style:italic; text-anchor:middle; }
+      .grp { fill:#7c3aed0d; stroke:#7c3aed; stroke-width:1.5; stroke-dasharray:6 5; rx:14; }
+      .grpt { font-family:'Helvetica Neue',Arial,sans-serif; font-size:15px; fill:#7c3aed; font-weight:700; }
+    </style>
+  </defs>
+
+  <!-- Extensions group -->
+  <rect class="grp" x="232" y="176" width="510" height="284"/>
+  <text class="grpt" x="248" y="200">Extensions</text>
+
+  <!-- edges (drawn first, under boxes) -->
+  <!-- User -> Sandbox -->
+  <path class="edge" d="M145,214 C300,150 340,110 418,98" marker-end="url(#ah)"/>
+  <text class="etxt" x="300" y="132">creates</text>
+  <!-- User -> Claim -->
+  <path class="edge" d="M145,238 L248,244" marker-end="url(#ah)"/>
+  <text class="etxt" x="196" y="232">creates</text>
+  <!-- Claim -> WarmPool -->
+  <path class="edge" d="M442,244 L516,244" marker-end="url(#ah)"/>
+  <text class="etxt" x="479" y="235">adopts from</text>
+  <!-- WarmPool -> Sandbox (pre-warms) -->
+  <path class="edge" d="M600,216 C560,170 540,140 512,120" marker-end="url(#ah)"/>
+  <text class="etxt" x="595" y="160">pre-warms</text>
+  <!-- WarmPool -> Template (references) -->
+  <path class="edge" d="M620,274 L620,344" marker-end="url(#ah)"/>
+  <text class="etxt" x="680" y="314">references</text>
+  <!-- Sandbox -> Pod -->
+  <path class="edge" d="M592,92 L662,92" marker-end="url(#ah)"/>
+  <text class="etxt" x="627" y="82">creates</text>
+  <!-- Pod -> Runtime -->
+  <path class="edge" d="M784,92 L852,92" marker-end="url(#ah)"/>
+  <text class="etxt" x="818" y="82">runs on</text>
+
+  <!-- User -->
+  <rect class="box" x="34" y="200" width="110" height="60" stroke="#475569"/>
+  <text class="lbl" x="89" y="236">User</text>
+
+  <!-- Sandbox (core) -->
+  <rect class="box" x="418" y="60" width="174" height="64" stroke="#0d9488"/>
+  <text class="lbl" x="505" y="90">Sandbox</text>
+  <text class="sub" x="505" y="110">core CRD</text>
+
+  <!-- Pod -->
+  <rect class="box" x="662" y="64" width="122" height="56" stroke="#334155"/>
+  <text class="lbl" x="723" y="98">Pod</text>
+
+  <!-- Runtime -->
+  <rect class="box" x="852" y="64" width="168" height="56" stroke="#334155"/>
+  <text class="lbl" x="936" y="98">Sandbox Runtime</text>
+
+  <!-- SandboxClaim -->
+  <rect class="box" x="248" y="216" width="194" height="56" stroke="#7c3aed"/>
+  <text class="lbl" x="345" y="250">SandboxClaim</text>
+
+  <!-- SandboxWarmPool -->
+  <rect class="box" x="516" y="216" width="208" height="56" stroke="#7c3aed"/>
+  <text class="lbl" x="620" y="250">SandboxWarmPool</text>
+
+  <!-- SandboxTemplate -->
+  <rect class="box" x="516" y="344" width="208" height="56" stroke="#7c3aed"/>
+  <text class="lbl" x="620" y="378">SandboxTemplate</text>
+</svg>
