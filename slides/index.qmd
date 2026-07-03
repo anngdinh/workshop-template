@@ -357,26 +357,32 @@ regardless of whether it runs on a laptop or a Kubernetes cluster.
 
 :::: {.columns}
 ::: {.column width="50%"}
-![Coding agents — Claude Code](images/opensandbox/scenario-claude-code.jpg){width="92%" style="border-radius:8px;border:1px solid #ddd;"}
+![Coding agents — Claude Code](images/opensandbox/scenario-claude-code.jpg){width="94%" style="border-radius:8px;border:1px solid #ddd;"}
 :::
 ::: {.column width="50%"}
-![Browser automation — Playwright](images/opensandbox/scenario-playwright.png){width="92%" style="border-radius:8px;border:1px solid #ddd;"}
-:::
-::::
-
-:::: {.columns}
-::: {.column width="50%"}
-![Remote development — VS Code Web](images/opensandbox/scenario-vscode.jpg){width="92%" style="border-radius:8px;border:1px solid #ddd;"}
-:::
-::: {.column width="50%"}
-![RL training & evaluation](images/opensandbox/scenario-rl.jpg){width="92%" style="border-radius:8px;border:1px solid #ddd;"}
+![Browser automation — Playwright](images/opensandbox/scenario-playwright.png){width="94%" style="border-radius:8px;border:1px solid #ddd;"}
 :::
 ::::
 
 ::: {.notes}
-Also: AI code execution (stream generated-code output) and enterprise isolation
-(secure runtimes + egress + ingress). Every one of these is just a sandbox with
-a different image and entrypoint.
+Coding agents and browser automation — two of the most common sandbox workloads.
+:::
+
+## Typical scenarios (cont.) {background-color="#f4f2fb"}
+
+:::: {.columns}
+::: {.column width="50%"}
+![Remote development — VS Code Web](images/opensandbox/scenario-vscode.jpg){width="94%" style="border-radius:8px;border:1px solid #ddd;"}
+:::
+::: {.column width="50%"}
+![RL training & evaluation](images/opensandbox/scenario-rl.jpg){width="94%" style="border-radius:8px;border:1px solid #ddd;"}
+:::
+::::
+
+::: {.notes}
+Remote dev and RL training. Also: AI code execution and enterprise isolation
+(secure runtimes + egress + ingress). Every one is just a sandbox with a
+different image and entrypoint.
 :::
 
 # Architecture {background-color="#eef3fb"}
