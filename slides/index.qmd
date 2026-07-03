@@ -231,7 +231,7 @@ This section introduces OpenSandbox. Arrow **right** to move between the five mo
 (Framing → Architecture → Core flows → Hands-on → Wrap), and **down** to go deeper within one.
 :::
 
-## What is OpenSandbox? {background-color="#f4f2fb"}
+## What is OpenSandbox? {background-color="#f4f2fb" .smaller}
 
 > Securely run commands, code interpreters, browsers, and developer tools in **isolated environments** with multi-language SDKs.
 
@@ -250,7 +250,7 @@ A general-purpose **sandbox platform for AI applications**:
 Listed in the [CNCF Landscape](https://landscape.cncf.io/?item=orchestration-management--scheduling-orchestration--opensandbox).
 :::
 
-## Why does it exist? {background-color="#f4f2fb"}
+## Why does it exist? {background-color="#f4f2fb" .smaller}
 
 AI applications increasingly need to run **untrusted, model-generated, or agentic code**.
 
@@ -307,19 +307,19 @@ plane (user container + execd + sidecars), and the network & security plane.
 Walk top-to-bottom, then we take each surface in turn.
 :::
 
-## The six surfaces {background-color="#eef3fb"}
+## The six surfaces {background-color="#eef3fb" .smaller}
 
 ::: {.incremental}
-1. **Client** — SDKs, `osb` CLI, MCP server
-2. **Protocol** — OpenAPI contracts (`specs/`) — the source of truth
+1. **Client** — SDKs · `osb` CLI · MCP
+2. **Protocol** — OpenAPI contracts (`specs/`)
 3. **Control plane** — FastAPI lifecycle server
-4. **Runtime backends** — Docker & Kubernetes
-5. **Data plane** — user container + injected `execd` + sidecars
-6. **Network & security** — endpoints, ingress, egress, isolation
+4. **Runtime** — Docker & Kubernetes
+5. **Data plane** — container + `execd` + sidecars
+6. **Network & security** — ingress · egress · isolation
 :::
 
 ::: {.fragment}
-> SDKs depend on **contracts**, the server owns **orchestration**, runtimes own **platform specifics**, and `execd`/egress own **in-sandbox operations**.
+> Contracts for SDKs · orchestration in the server · platform specifics in runtimes · in-sandbox ops in `execd`/egress.
 :::
 
 ## ① Client surface {background-color="#eef3fb" .smaller}
@@ -412,7 +412,7 @@ SDKs and generated clients **align to the specs** rather than drifting from them
 Plus **Snapshots**: create a persistent snapshot from a sandbox, then start new sandboxes from it.
 :::
 
-## ③ Lifecycle control plane {background-color="#eef3fb"}
+## ③ Lifecycle control plane {background-color="#eef3fb" .smaller}
 
 A **FastAPI** server (`server/`) that owns orchestration:
 
@@ -498,7 +498,7 @@ Pause commits the rootfs to an OCI image and frees resources; resume recreates t
 :::
 ::::
 
-## ⑤ Sandbox data plane {background-color="#eef3fb"}
+## ⑤ Sandbox data plane {background-color="#eef3fb" .smaller}
 
 Each sandbox = the **user's image + entrypoint**, with OpenSandbox processes injected around it:
 
@@ -548,7 +548,7 @@ The official `code-interpreter` image runs **Jupyter** inside the sandbox; `exec
 Lower-level command / file / code APIs stay available through the sandbox SDKs directly.
 :::
 
-## ⑥ Networking & security {background-color="#eef3fb"}
+## ⑥ Networking & security {background-color="#eef3fb" .smaller}
 
 ::: {.incremental}
 - **Ingress** — K8s HTTP/WS reverse proxy (header / URI / wildcard-host routing)
@@ -642,7 +642,7 @@ Client
 Command and code execution stream output over **Server-Sent Events**; long-lived shells use **PTY over WebSocket**.
 :::
 
-## Flow: egress, pause & snapshots {background-color="#eef6f2"}
+## Flow: egress, pause & snapshots {background-color="#eef6f2" .smaller}
 
 :::: {.columns}
 ::: {.column width="50%"}
@@ -684,7 +684,7 @@ curl http://127.0.0.1:8080/health
 # → {"status": "healthy"}
 ```
 
-## 2 · Create & use a sandbox {background-color="#fbf1f6"}
+## 2 · Create & use a sandbox {background-color="#fbf1f6" .smaller .scrollable}
 
 ```python
 from opensandbox import Sandbox
@@ -709,7 +709,7 @@ async with sandbox:
     print(out.result[0].text)  # 4
 ```
 
-## 3 · The `osb` CLI {background-color="#fbf1f6"}
+## 3 · The `osb` CLI {background-color="#fbf1f6" .smaller}
 
 ```bash
 pip install opensandbox-cli
@@ -730,7 +730,7 @@ Same lifecycle, three faces: SDK, CLI, and MCP — pick what fits your workflow.
 
 # Wrap-up {background-color="#f4f2fb"}
 
-## Design principles {background-color="#f4f2fb"}
+## Design principles {background-color="#f4f2fb" .smaller}
 
 ::: {.incremental}
 - **Protocol first** — behavior starts from OpenAPI contracts
