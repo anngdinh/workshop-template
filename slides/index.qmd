@@ -291,6 +291,22 @@ into Section 2.
 | GPU / PCI passthrough / fallback | **kata-clh** | Works if FC support drops |
 | — anything — | kata-qemu | No axis where it wins |
 
+## 1.15 · Compatibility matrix {background-color="#f5f2ec" .smaller .scrollable}
+
+| Feature | runc | gVisor | Kata (QEMU) | Kata (CLH) | Kata (FC) |
+|---|---|---|---|---|---|
+| Syscall compatibility | Full | Partial | Full | Full | Limited |
+| GPU support | Yes | **No** | Yes | Yes | **No** |
+| IPv6 | Yes | Yes | Yes | Yes | Yes |
+| Privileged mode | Yes | **No** | Yes | Yes | **No** |
+| Docker volume | Yes | Yes | Yes | Yes | Yes |
+| systemd | Yes | **No** | Yes | Yes | **No** |
+| iptables `nat` (egress sidecar) | Yes | **No** | Yes | Yes | Yes |
+
+::: {.fragment}
+Source: [OpenSandbox — Secure Container Runtime guide](https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/guides/secure-container.md#compatibility-matrix)
+:::
+
 # OpenSandbox {background-color="#f4f2fb"}
 
 ![](images/opensandbox/logo.svg){height="150px" fig-align="center"}
