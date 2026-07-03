@@ -257,30 +257,39 @@ high-density, cost-sensitive fleets, gVisor is fundamentally cheaper per sandbox
 for unit economics when we productize — I'll come back to it in the cost section.
 :::
 
-## 1.13 · Verdict: a routing decision {background-color="#f5f2ec" .smaller .scrollable}
+## 1.13 · Verdict {background-color="#f5f2ec" .smaller}
 
-Not "X wins" — a validated routing table:
+Not "X wins" — **route per workload**:
 
-| If the workload is… | Use | Because |
-|---|---|---|
-| Interactive agent, rapid tool loops | **kata-fc** | Best dispatch + best steady-state latency, real kernel |
-| Fresh sandbox per request (no pool) | **gVisor** | −30% cold latency, no nested-virt, zero overhead |
-| High density / cost-sensitive fleet | **gVisor** | Zero scheduler overhead + commodity nodes |
-| Needs ptrace / io_uring / mount / kernel modules | **kata-fc / clh** | gVisor's ~80% syscall coverage fails these |
-| Highest-trust isolation | **kata-fc** | Hardware-virt boundary, minimal attack surface |
-| Fallback / GPU / PCI passthrough | **kata-clh** | Working alternative if FC support drops |
-| — anything — | kata-qemu | No axis where it wins; keep only for QEMU-specific device models |
+::: {.incremental}
+- 🔥 **Hot interactive path** → **kata-fc** — fastest dispatch + steady-state, strongest isolation
+- ⚡ **Cold / per-request / high-density** → **gVisor** — −30% cold latency, zero overhead, commodity nodes
+- 🚫 **kata-qemu** → off the table — no axis where it wins
+:::
 
+::: {.fragment}
 **Production default:** kata-fc for the pool hot-path; gVisor for no-pool / density.
+:::
 
 ::: {.notes}
-So the takeaway isn't 'X wins.' It's that we now have a validated, measured routing table. Firecracker
-is our default for the hot interactive path because it's fastest where users feel it and gives the
-strongest isolation. gVisor is the right backend for cold, per-request, or high-density workloads. QEMU
-is off the table. And crucially — our platform can route per-workload: a multi-tenant deployment could
-send shell and code sandboxes to gVisor and full-Linux workloads to Firecracker, from the same control
-plane. That flexibility is a product feature, and it's the bridge into Section 2.
+The takeaway isn't 'X wins' — it's a validated, measured routing table. Firecracker is our default for
+the hot interactive path (fastest where users feel it, strongest isolation). gVisor is the right backend
+for cold, per-request, or high-density workloads. QEMU is off the table. And crucially — the platform can
+route per-workload from the same control plane. That flexibility is a product feature, and the bridge
+into Section 2.
 :::
+
+## 1.14 · Full routing table {background-color="#f5f2ec" .smaller .scrollable}
+
+| Workload | Use | Why |
+|---|---|---|
+| Interactive agent, rapid tool loops | **kata-fc** | Best dispatch + steady-state, real kernel |
+| Fresh sandbox per request (no pool) | **gVisor** | −30% cold latency, no nested-virt |
+| High density / cost-sensitive fleet | **gVisor** | Zero overhead + commodity nodes |
+| Needs ptrace / io_uring / mount | **kata-fc / clh** | gVisor's ~80% syscall coverage fails these |
+| Highest-trust isolation | **kata-fc** | Hardware-virt boundary |
+| GPU / PCI passthrough / fallback | **kata-clh** | Works if FC support drops |
+| — anything — | kata-qemu | No axis where it wins |
 
 # OpenSandbox {background-color="#f4f2fb"}
 
