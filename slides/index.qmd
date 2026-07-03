@@ -1,6 +1,6 @@
 ---
-title: "Annd2 workshop template"
-subtitle: Subtitle
+title: "Running Untrusted AI Code Safely"
+subtitle: "Sandbox infrastructure — the landscape, secure container runtimes, OpenSandbox & Agent Sandbox"
 # format:
 #   revealjs:
 #     theme: sky
@@ -9,9 +9,84 @@ subtitle: Subtitle
 
 # Agenda
 
-- Item 1
-- Item 2
-- Item 3
+1. **The problem & the landscape** — why sandboxes, and who's building them (E2B, Daytona, Vercel, Cloudflare, AWS…)
+2. **Secure container runtimes** — Firecracker · gVisor · Kata, measured head-to-head
+3. **OpenSandbox** — universal sandbox infrastructure for AI
+4. **Agent Sandbox** — the Kubernetes-native `Sandbox` CRD (SIG Apps)
+5. **Q & A**
+
+# The Problem & The Landscape {background-color="#eef1f4"}
+
+Why sandboxes — and who's building them
+
+## AI writes code now — and runs it {background-color="#eef1f4" .smaller}
+
+::: {.incremental}
+- LLM agents **generate and execute** code, shell commands, and browser actions — on *your* infrastructure
+- That code is **untrusted / adversarial by assumption**
+- A plain container **shares the host kernel** — process isolation, not a security boundary
+- One escape → other tenants, your secrets, the host
+:::
+
+::: {.fragment}
+So you need a **sandbox**: isolate it, run it fast, tear it down.
+:::
+
+## What a sandbox must do {background-color="#eef1f4" .smaller}
+
+::: {.incremental}
+- 🔒 **Strong isolation** — contain hostile code
+- ⚡ **Fast start** — agents spawn one per turn (ms, not seconds)
+- ♻️ **Stateful lifecycle** — create / pause / resume / snapshot
+- 🌐 **Controlled fs & network** — egress allowlists, no lateral movement
+- 📈 **Scale & cost** — thousands of short-lived sandboxes, cheaply
+:::
+
+::: {.fragment}
+These five tensions drive **every** design choice in this talk.
+:::
+
+## The landscape {background-color="#eef1f4" .smaller}
+
+**Managed platforms (SaaS)**
+E2B · Daytona · Modal · Vercel Sandbox · Cloudflare Sandbox SDK · AWS Bedrock AgentCore · CodeSandbox · Runloop
+
+**Cloud primitives**
+AWS Firecracker (Lambda / Fargate) · Fly Machines · GKE + gVisor · Cloud Run
+
+**Isolation tech underneath**
+Firecracker · gVisor · Kata · plain containers
+
+::: {.fragment}
+An explosion of options since 2024 — all solving the **same** problem.
+:::
+
+## Solutions at a glance {background-color="#eef1f4" .smaller .scrollable}
+
+| Solution | What it is | Isolation | Model |
+|---|---|---|---|
+| **E2B** | OSS sandboxes for AI agents / code | Firecracker microVM (~150 ms) | OSS + cloud |
+| **Daytona** | Fast AI code sandboxes / workspaces | Containers, shared kernel (~90 ms) | Managed |
+| **Modal** | Serverless compute + Sandboxes API | gVisor | Managed |
+| **Vercel Sandbox** | Ephemeral compute for untrusted code | Firecracker microVM | Managed (GA 2026) |
+| **Cloudflare Sandbox SDK** | Code execution from Workers | Containers + V8 isolates, edge | Managed |
+| **AWS Bedrock AgentCore** | Managed agent code-interpreter / browser | Firecracker microVM | Managed |
+
+::: {.fragment}
+Fastest start (Daytona, containers) vs. strongest isolation (Firecracker microVMs) — the core trade-off.
+:::
+
+## The common thread {background-color="#eef1f4" .smaller}
+
+::: {.incremental}
+- Most are **closed SaaS** or **single-cloud**
+- Underneath, it's the **same few isolation techs** — Firecracker · gVisor · Kata
+- Run your own — multi-tenant, on your cluster — and you must choose: **runtime + control plane + a k8s-native API**
+:::
+
+::: {.fragment}
+That's the rest of this talk → **① which secure runtime** (measured) · **② OpenSandbox** · **③ Agent Sandbox**
+:::
 
 # Secure Container Runtimes {background-color="#f5f2ec"}
 
