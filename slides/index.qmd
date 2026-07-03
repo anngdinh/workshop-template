@@ -66,6 +66,8 @@ lot of the cost story later.
 
 ## 1.3 · Firecracker — `kata-fc` {background-color="#f5f2ec" .smaller}
 
+![](images/runtimes/firecracker.svg){height="80px" fig-align="center"}
+
 **AWS's minimal microVM monitor (Rust)** — the engine behind Lambda & Fargate.
 
 ::: {.incremental}
@@ -80,6 +82,8 @@ lot of the cost story later.
 :::
 
 ## 1.4 · Cloud Hypervisor — `kata-clh` {background-color="#f5f2ec" .smaller}
+
+![](images/runtimes/cloud-hypervisor.png){height="80px" fig-align="center" style="border-radius:8px;"}
 
 **A modern, Rust-based VMM** (Intel + community), cloud-native focus.
 
@@ -96,6 +100,8 @@ lot of the cost story later.
 
 ## 1.5 · QEMU — `kata-qemu` {background-color="#f5f2ec" .smaller}
 
+![](images/runtimes/qemu.svg){height="80px" fig-align="center"}
+
 **The original, full-featured VMM & emulator** — the compatibility baseline.
 
 ::: {.incremental}
@@ -110,6 +116,8 @@ lot of the cost story later.
 :::
 
 ## 1.6 · gVisor — `runsc` {background-color="#f5f2ec" .smaller}
+
+![](images/runtimes/gvisor.png){height="80px" fig-align="center"}
 
 **Google's userspace kernel (Go)** — used by GKE, App Engine, Cloud Run.
 
